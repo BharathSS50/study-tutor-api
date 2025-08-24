@@ -1,17 +1,30 @@
-import dns from "node:dns";
-dns.setDefaultResultOrder("ipv4first");
-
-import express, { json } from "express";
-import cors from "cors";
+import dns from "node:dns/promises";
+import { URL } from "node:url";
 import { Pool } from "pg";
+
+// Prefer IPv4 globally (harmless even with step 1)
+import dnsCtl from "node:dns";
+dnsCtl.setDefaultResultOrder("ipv4first");
+
+// Parse DATABASE_URL and pin host to IPv4
+const dbUrl = new URL(process.env.DATABASE_URL);
+const [ipv4] = await dns.resolve4(dbUrl.hostname); // get A record
+
+const pool = new Pool({
+  host: ipv4, // <- IPv4 only
+  port: Number(dbUrl.port || 5432),
+  user: decodeURIComponent(dbUrl.username),
+  password: decodeURIComponent(dbUrl.password),
+  database: dbUrl.pathname.replace(/^\//, ""),
+  ssl: { rejectUnauthorized: false }, // keep for Supabase/Neon
+});
+
 
 const app = express();
 app.use(json());
 
 const allowed = (process.env.CORS_ORIGIN || "").split(",");
 app.use(cors({ origin: (o, cb) => cb(null, !o || allowed.includes(o)) }));
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
 
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
