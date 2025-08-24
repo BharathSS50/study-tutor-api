@@ -1,9 +1,11 @@
-const express = require("express");
-const cors = require("cors");
-const { Pool } = require("pg");
+require("dns").setDefaultResultOrder("ipv4first");
+
+import express, { json } from "express";
+import cors from "cors";
+import { Pool } from "pg";
 
 const app = express();
-app.use(express.json());
+app.use(json());
 
 const allowed = (process.env.CORS_ORIGIN || "").split(",");
 app.use(cors({ origin: (o, cb) => cb(null, !o || allowed.includes(o)) }));
