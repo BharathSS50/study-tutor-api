@@ -1,4 +1,5 @@
-require("dns").setDefaultResultOrder("ipv4first");
+import dns from "node:dns";
+dns.setDefaultResultOrder("ipv4first");
 
 import express, { json } from "express";
 import cors from "cors";
